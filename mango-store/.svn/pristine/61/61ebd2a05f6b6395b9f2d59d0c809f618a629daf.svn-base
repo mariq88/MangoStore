@@ -1,0 +1,36 @@
+var urlManager = $.sammy(function() {
+	this.element_selector = "#container-wrap";
+
+	this.get("#/home", function() {
+		switcher.home();
+	});
+
+	this.get("#/products", function() {
+		switcher.products();
+	});
+
+	this.get("#/categories", function() {
+		switcher.categories();
+	});
+
+	this.get("#/categories/:category", function() {
+		switcher.byCategory(this.params['category']);
+	});
+
+	this.get("#/checkout", function() {
+		switcher.checkOut();
+	});
+
+	this.get("#/products/:id", function() {
+		switcher.product(this.params['id']);
+	})
+});
+
+var searchRequestManager = $.sammy(function() {
+	this.element_selector = "#sidebar";
+
+	this.get("#/search", function() {
+		switcher.search(this.params['query']);
+		return false;
+	});
+})

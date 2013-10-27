@@ -1,0 +1,19 @@
+$(document).ready(function () {
+            var menuItems = $("#menu ul li");
+            menuItems.hover(
+              function () { $(this).addClass('selected'); },
+              function () { $(this).removeClass('selected'); 
+            });
+
+            menuItems.click(function(ev) {
+              menuItems.each(function() {
+                var current = $(this);
+                if (current.hasClass("current")) {
+                  current.removeClass("current");
+                }
+              });
+              if (!$(this).hasClass("items")) {
+                $(this).addClass("current"); 
+              }
+            });
+        });

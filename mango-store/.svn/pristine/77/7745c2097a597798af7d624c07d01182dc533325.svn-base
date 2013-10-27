@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Mango Store</title>
+    <!-- <link href="Stylesheets/menu.css" rel="stylesheet" type="text/css" media="all" /> -->
+    <link href="styles/style.css" rel="stylesheet" />
+    <link href="styles/slider.css" rel="stylesheet" />
+    <link href="styles/container.css" rel="stylesheet" />
+    <!-- <link rel="stylesheet" href="Stylesheets/login.css" /> -->
+    <!-- <script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>-->
+    <script src="js/jquery-1.9.1.js"></script>
+    <script src="js/sammy-latest.min.js"></script>
+    <script src="js/js-image-slider.js"></script>
+    <script src="js/url-manager.js"></script>
+    <!--<script src="js/login.js"></script>-->
+    <script src="js/search.js"></script>
+    <script src="js/page-switch.js"></script>    
+	<script src="js/product-page-controler.js"></script>
+</head>
+<body>
+    <div id="qunit"></div>
+    <div id="wrapper">
+        <header>
+            <div id="login_block">
+                <img id="logo" alt="logo TU-Sofia" class="clearfix" src="images/mango-logo-small.png"/>
+                <h1>MangoStore</h1>
+                <div id="loginContainer">
+                <a href="#" id="loginButton"><span>Log in</span></a>
+                <div style="clear:both"></div>
+                <div id="loginBox">                
+                    <form id="loginForm" method="post" action="login.php">
+                        <fieldset id="body">
+                                <input type="text" name="facNumber" id="email" placeholder="Numéro de fac."/><input type="submit" id="login" value="Login" />
+                                <input type="password" name="idNumber" id="password" placeholder="ID"/>
+                        </fieldset>
+                  </form>
+                </div>
+            </div>
+            </div>
+            <nav id="menu">
+                <ul>
+                    <li class="current">
+                        <a href="#/home">Home</a>
+                    </li><li>
+                        <a href="#/products">Products</a>
+                    </li><li>
+                        <a href="#/categories">Categories</a>
+                    </li><li>
+                        <a href="#">About</a>
+                    </li><li>
+                        <a href="#">Other</a>
+                    </li>
+					         <li class="items">
+                        <a href="#" class="cart">Items: 0</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+        <div id="page-main"  class="clearfix">
+            <div id="container-wrap">
+                <div id="container">
+                  <div style="width: 100%; height: 400px; position: relative">
+                    <img src="images/loading.gif" style="position: absolute; top: 50%; left: 50%;" alt="loading"/>
+                  </div>
+                </div>
+				<div class="front-div">
+				</div>
+            </div>
+                <aside id="sidebar">
+					
+                  <form name="search-form" action="#/search" method="get">
+					             <input type="text" name="query" id="searchbox" placeholder="Search"/>
+                       <input type="submit" value="Search"/>
+                  </form>
+                  <div id='fb-root'></div>
+                  <script src='http://connect.facebook.net/en_US/all.js'></script>
+                  <p><a id="fbanchor" onclick='postToFeed(); return false;'>Post to Feed</a></p>
+                  <p id='msg'></p>
+                </aside>
+             </div>
+        <footer>
+            <h2>Footer</h2>    
+        </footer>
+         </div>
+    <script src="js/products.js"></script>
+    <script> 
+      FB.init({appId: "257502997723222", status: true, cookie: true});
+
+      function postToFeed() {
+
+        // calling the API ...
+        var obj = {
+          method: 'feed',
+          redirect_uri: 'file:///C:/Users/maria/Desktop/RepoMango/mango-store/index.html',
+          link: 'https://developers.facebook.com/docs/reference/dialogs/',
+          picture: 'http://weareutopia.com/wp-content/uploads/2012/07/mango-logotype-word-mark-design-reversed-UTOPIA.jpg',
+          name: 'Mango Store',
+          caption: 'Welcome to Mango Store',
+          description: 'A place where you can find all books, movies or music that you need.'
+        };
+
+        function callback(response) {
+          document.getElementById('msg').innerHTML = "Post ID: " + response['post_id'];
+        }
+
+        FB.ui(obj, callback);
+      }
+
+    </script>
+    <script>
+        urlManager.run("#/home");
+        searchRequestManager.run();
+    </script>
+    <script src="js/jquery-menu.js"></script>
+</body>
+</html>

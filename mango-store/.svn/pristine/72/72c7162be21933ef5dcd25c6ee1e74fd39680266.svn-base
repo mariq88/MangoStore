@@ -1,0 +1,418 @@
+﻿// if (!Object.create) {
+//     Object.create = function (obj) {
+//         function f() {
+//         };
+//         f.prototype = obj;
+//         return new f();
+//     }
+// }
+
+// if (!Object.prototype.extend) {
+//     Object.prototype.extend = function (properties) {
+//         function f() {
+//         };
+//         f.prototype = Object.create(this);
+//         for (var prop in properties) {
+//             f.prototype[prop] = properties[prop];
+//         }
+//         //// base class
+//         f.prototype._superCtor = this;
+//         return new f();
+//     }
+// }
+
+(function () {
+    if (!Storage.prototype.setObject) {
+        Storage.prototype.setObject = function setObject(key, obj) {
+            var jsonObj = JSON.stringify(obj);
+            this.setItem(key, jsonObj);
+        };
+    }
+    if (!Storage.prototype.getObject) {
+        Storage.prototype.getObject = function getObject(key) {
+            var jsonObj = this.getItem(key);
+            var obj = JSON.parse(jsonObj);
+            return obj;
+        };
+    }
+})();
+
+var Product = {
+    init: function (type, title, price, imgSrc, code, quantity) {
+        this.productType = type;
+        this.title = title;
+        this.price = price;
+        this.imgSrc = imgSrc;
+        this.code = code;
+        this.quantity = quantity;
+    },
+    introduce: function () {
+        return "Type: " + this.productType + ", Name: " + this.title + ", Price: " + this.price+ ", ProductCode: " + this.code;
+    }
+}
+
+var ProductRepository = (function () {
+    var allProductsByCategory = [];
+
+    var Category={
+        init: function ( categoryTitle ) {
+        this.name = categoryTitle;
+        this.productArray = [];
+        }
+    }
+    
+    this.AddNewCategory = function(categoryTitle) {
+        var isDuplicate = false;
+        for (var i = 0; i < allProductsByCategory.length; i++) {
+            if (allProductsByCategory[i].name === categoryTitle) {
+                isDuplicate = true;
+                break;
+            };
+        };
+        if (! isDuplicate) {
+            var newCategory = Object.create(Category);
+            newCategory.init(categoryTitle);
+            allProductsByCategory.push(newCategory);
+        }
+        else  {
+           throw "This category allready exists!"
+        }
+    }
+
+    this.AddProduct = function(product) {
+        var categoryIndex = -1;
+         for (var i = 0; i < allProductsByCategory.length; i++) {
+            if (allProductsByCategory[i].name === product.productType) {
+               categoryIndex = i;
+                break;
+            };
+        };
+        if (categoryIndex !== -1) {
+             allProductsByCategory[categoryIndex].productArray.push(product);
+         }
+         else{
+            this.AddNewCategory(product.productType);
+            allProductsByCategory[allProductsByCategory.length-1].productArray.push(product)
+         }
+    }
+     this.GetProductsByCategory = function (categoryTitle) {
+        var resultArray = [];
+        var categoryIndex = -1;
+        for (var i = 0; i < allProductsByCategory.length; i++) {
+            if (allProductsByCategory[i].name === categoryTitle) {
+               categoryIndex = i;
+                break;
+            };
+        };
+        if (categoryIndex !== -1) {
+            resultArray = allProductsByCategory[categoryIndex].productArray;
+        }
+        else{
+            throw "No such category!"
+        }
+
+        return resultArray;
+    }
+    
+    this.GetAll = function ()  {
+        var allProductsArray = [];
+        
+        for (var i = 0; i < allProductsByCategory.length; i++) {
+           var currentCategory = allProductsByCategory[i].productArray;
+        
+            for (var j = 0; j < currentCategory.length; j++) {
+                allProductsArray.push(currentCategory[j]);
+            }
+        }
+
+        return allProductsArray;
+    }
+
+    this.GetCategories = function () {
+        var allCategories = [];
+
+        for (var i = 0; i < allProductsByCategory.length; i++) {
+            allCategories.push(allProductsByCategory[i].name);
+        }
+
+        return allCategories;
+    }
+    
+    return {
+        AddNewCategory: AddNewCategory,
+        AddProduct: AddProduct,
+        GetProductsByCategory: GetProductsByCategory,
+        GetAll: GetAll,
+        GetCategories: GetCategories
+    }
+})();
+
+
+var CartRepository = (function () {
+    var cart = [];
+
+    this.AddProduct = function(code) {
+    var allProducts = ProductRepository.GetAll();
+        for (var i = 0; i < allProducts.length; i++) {
+            if (code == allProducts[i].code) {
+                cart.push(allProducts[i]);
+                break;
+            };
+        };
+    }
+    
+    this.DeleteProduct = function (code) {
+        for (var i = 0; i < cart.length; i++) {
+            if (code == cart[i].code) {
+                cart[i] == cart[cart.length-1];
+                cart.pop();
+                break;
+            };
+        };
+    }
+
+    this.Empty = function () {
+        cart = new Array();
+    }
+    
+    this.GetCart = function ()  {
+        return cart;
+    }
+
+    this.GetTotalAmount  = function ()  {
+        var sum = 0;
+        for (var i = 0; i < cart.length; i++) {
+           sum += cart[i].price;
+        };
+        return sum;
+    }
+    
+    return {
+        AddProduct: AddProduct,
+        DeleteProduct: DeleteProduct,
+        Empty: Empty,
+        GetCart: GetCart,
+        GetTotalAmount: GetTotalAmount
+    }
+})();
+
+//// Just For TEST: creates array of products:
+function GenerateProducts(type) {
+    var prefixCode=0;
+    if (type == "Movie") {
+        prefixCode  = 30000;
+    }
+    else if (type == "Music") {
+        prefixCode  = 20000;
+    }
+    else if (type == "Book") {
+        prefixCode  = 10000;
+    }
+    else{
+        prefixCode  = 90000;
+    };
+    for (var i = 0; i < 15; i++) {
+        var prod = Object.create(Product)
+        prod.init(type, type+" " + i, 32+i, "images/Tulips.jpg", (prefixCode + i * 5), 5);
+        ProductRepository.AddProduct(prod);
+    }
+}
+
+var Container = (function ($) {
+    var div = $('#container');
+    var ul = document.createElement("ul");
+    var itemNode = document.createElement("li");
+    var p = document.createElement("p");
+    var img = document.createElement("img");
+    var btn = document.createElement("a");
+	var itemsCount = 0;
+	$(".front-div").hide();
+
+    $.fn.zoom = function (size) {
+        size = parseInt(size);
+        var elements = $(this.selector);
+        elements.on("mouseover", function () {
+            var oldWidth = parseInt($(this).css("width"));
+            var oldHeight = parseInt($(this).css("height"));
+            $(this).css("width", (oldWidth * size) + "px");
+            $(this).css("height", (oldHeight * size) + "px");
+        });
+
+        elements.on("mouseout", function () {
+            var oldWidth = parseInt($(this).css("width"));
+            var oldHeight = parseInt($(this).css("height"));
+            $(this).css("width", (oldWidth / size) + "px");
+            $(this).css("height", (oldHeight / size) + "px");
+        });
+        return this;
+    }
+
+    function clearDiv() {
+        // $("#container").empty();
+        var div1 = document.getElementById("container");
+        while (div1.firstChild) {
+            div1.removeChild(div1.firstChild);
+        }
+        return this;
+    }
+
+    function Render(array, productsOnPage, startNumber) {
+        clearDiv();
+        var startNumber = startNumber || 0;
+        var productsOnPage = productsOnPage || 12;
+        var jUl = $(ul.cloneNode());
+
+        for (var i = startNumber, len = array.length; i < len && i < (startNumber + productsOnPage) ; i++) {
+            var currProd = array[i];
+
+            var currImg = $(img.cloneNode());
+            currImg.attr("src", currProd.imgSrc);
+            currImg.css({
+                'width': '120px',
+                'height': '140px',
+            });
+
+            var currP = $(p.cloneNode());
+            currP.html('<strong>Price: ' + currProd.price + ' $ </strong><br>');
+
+            var jBtn = $(btn.cloneNode()).addClass("btn").attr('href', '#');
+            jBtn.attr('id', currProd.code);
+            jBtn.html("Add to Card");
+
+            var jCurrLi = $(itemNode.cloneNode());
+            jCurrLi.addClass(currProd.productType);
+            jCurrLi.html('<p>' + currProd.title + '</p>');
+            jCurrLi.append(currImg);
+            jCurrLi.append(currP);
+            jCurrLi.append(jBtn);
+
+            jUl.append(jCurrLi);
+        }
+
+        div.append(jUl);
+
+        var rendedProducts = $('#container img')
+
+        //// add to cart:
+        $(".btn").click(
+            function () {
+                CartRepository.AddProduct(this['id']);
+				//get the name of the book
+				var item = $(this).parent().find(">:first-child").html();
+				//check the key of session storage if it's already used
+				if((sessionStorage.getItem(item)) && 
+					sessionStorage.getItem(item) < 50){
+					var value = sessionStorage.getItem(item) | 0;
+					sessionStorage.setItem(item, value + 1);
+				}
+				else{
+					sessionStorage.setItem(item, 1);
+				}
+					itemsCount++;
+				$(".cart").html("Items: " + itemsCount);			
+                return this;
+            });
+		$(".cart").click(
+            function () {
+                $(".front-div").empty();
+                $(".front-div").show(1000);
+                $(".front-div").offset({ left: 865, top: 200 });
+				for (var i = 0; i < sessionStorage.length; i++){
+					var name = sessionStorage.key(i);
+					var value = sessionStorage.getItem(sessionStorage.key(i));
+					$('.front-div').append(name + " Quantity: " + value + "</br>");
+				}
+				renderCloseCart();
+				clearCartIfNeed();
+            });		
+        ////show div when click on item
+        $(".front-div").hide();
+        $("img").click(
+            function (e) {
+                $(".front-div").empty();
+                $(".front-div").show(1000);
+                $(".front-div").offset({ left: e.pageX - 100, top: e.pageY - 100 });
+                $(this).prev().clone().appendTo(".front-div");
+                $(this).clone().appendTo(".front-div");
+                $(this).next().clone().appendTo(".front-div");
+                $(this).next().next().clone().appendTo(".front-div");
+                //add close button
+                var a = document.createElement("a");
+                $(a).addClass("quick-view-close");
+                $(a).text("x Close");
+                $(a).click(
+					function (e) {
+					    $(".front-div").empty();
+					    $(".front-div").hide();
+					})
+                $(a).appendTo(".front-div");
+            });
+
+    }
+	//render Clear
+	function clearCartIfNeed() {
+		var a = document.createElement("a");
+		$(a).addClass("quick-view-close");
+		$(a).css('right', 200);
+		$(a).css('background-color', "#FFFFA0");			
+		$(a).css('border', "1px solid black");
+		$(a).css('border-radius', 10);
+		$(a).text("clear cart");
+		$(a).click(
+			function (e) {
+				sessionStorage.clear();
+				itemsCount = 0;
+				$('.front-div').empty();
+				renderCloseCart();
+				$(".cart").html("Items: " + itemsCount);
+				clearCartIfNeed();					
+			})
+		$(a).appendTo(".front-div");
+	}
+	//Render Close
+	function renderCloseCart() {
+		var a = document.createElement("a");
+		$(a).addClass("quick-view-close");
+		$(a).text("x Close");
+		$(a).click(
+			function (e) {
+				$(".front-div").hide();
+			})
+		$(a).appendTo(".front-div");
+	}	
+    function RenderCategories(array) {
+        clearDiv();
+        var jUl = $(ul.cloneNode());
+
+        for (var i = 0, len = array.length; i < len ; i++) {
+            var currCat = array[i];
+
+            var currImg = $(img.cloneNode());
+            currImg.attr("src", 'Images/' + currCat + '.jpg');
+            currImg.css({
+                'width': '120px',
+                'height': '140px',
+            });
+
+            var jCurrLi = $(itemNode.cloneNode());
+            jCurrLi.html('<p>' + currCat + '</p>');
+            jCurrLi.append(currImg);
+
+            jUl.append(jCurrLi);
+        }
+
+        div.append(jUl);
+
+        var rendedProducts = $('#container img')
+    }
+    return {
+        Render: Render,
+        RenderCategories: RenderCategories
+    }
+}(jQuery));
+
+//// TEST
+GenerateProducts("Book");
+GenerateProducts("Music");
+GenerateProducts("Movie");
+GenerateProducts("LessonsCD");

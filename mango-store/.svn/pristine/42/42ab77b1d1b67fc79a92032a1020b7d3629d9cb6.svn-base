@@ -1,0 +1,24 @@
+var urlManager = $.sammy(function() {
+	this.element_selector = "#container";
+
+	this.get("#/home", function() {
+		switcher.home();
+	});
+
+	this.get("#/products", function() {
+		switcher.products();
+	});
+
+	this.get("#/categories", function() {
+		switcher.categories();
+	});
+});
+
+var searchRequestManager = $.sammy(function() {
+	this.element_selector = "#sidebar";
+
+	this.get("#/search", function() {
+		switcher.search(this.params['query']);
+		return false;
+	})
+})

@@ -1,0 +1,131 @@
+var switcher = (function() {
+	this.homeController = (function() {
+		this.createSlider = function() {
+			var allProducts = ProductRepository.GetAll();
+			var sliderFrame = $("<div></div>");
+			sliderFrame.attr("id", "sliderFrame");
+			sliderFrame.addClass("clearfix");
+			$('.front-div').hide();
+
+			var slider = $("<div></div>");
+			slider.attr("id", "slider");
+			var thumbs = $("<div></div>");
+			thumbs.attr("id", "thumbs");
+			thumbs.addClass("clearfix");
+			for (var l = allProducts.length, i = l - 5; i < l; i+=1) {
+				var img = $("<img/>");
+				img.attr("src", allProducts[i].imgSrc);
+				slider.append(img);
+
+				var thumb = $("<div></div>");
+				thumb.addClass("thumb");
+				var frame = $("<div></div>");
+				frame.addClass("frame");
+				var thumbContent = $("<div></div>");
+				thumbContent.addClass("thumb-content");
+				thumbContent.addClass("clearfix");
+				var a = $("<a href='#'>" + allProducts[i].title + "</a>");
+				thumbContent.append(a);
+				frame.append(img.clone());
+				thumb.append(frame);
+				thumb.append(thumbContent);
+				thumbs.append(thumb);
+			}
+			
+
+
+			sliderFrame.append(slider);
+			sliderFrame.append(thumbs);
+			$("#container").append(sliderFrame);
+		}
+
+		this.render = function() {
+			var container = $("#container");
+			container.fadeOut(200);
+			container.promise().done(function() { 
+				container.empty();
+				container.append($("<h3>Latest 5 entries:</h3>"));
+				createSlider();
+				container.show();
+				imageSlider.reload();
+			});
+
+
+			// var container = $("#container"); // no fadeout
+			// var slider = imageSlider;
+			// container.empty();
+			// container.append($("<h3>Latest 5 entries:</h3>"));
+			// createSlider();
+			// imageSlider.reload();
+			// container.show();
+
+		}
+
+		return {
+			render : render
+		}
+	})();
+
+	this.productController = (function() {
+		this.render = function() {
+			var container = $("#container");
+			container.fadeOut(200, function() {
+				$("#container").empty();
+				var allProducts = ProductRepository.GetAll();
+				Container.Render(allProducts);
+				container.show();
+			});
+		}
+
+		return {
+			render : render
+		}
+	})();
+
+	this.categoriesController = (function () {
+	    this.render = function () {
+	        var container = $("#container");
+	        container.fadeOut(200, function () {
+	            $("#container").empty();
+	            var allCategories = ProductRepository.GetCategories();
+	            Container.RenderCategories(allCategories);
+	            container.show();
+	        });
+	    }
+
+	    return {
+	        render: render
+	    }
+	   
+	})();
+
+	
+	this.searchController = (function() {
+		this.render = function(query) {
+			var container = $("#container");
+			container.fadeOut(200, function() {
+				container.empty();
+				var searchResult = searchEngine.getMatching(query);
+				if (searchResult.length > 0) {
+					Container.Render(searchResult);
+				}
+				else {
+					container.append("<h3>No results found.</h3>");
+				}
+				container.show();
+			});
+		}
+		
+		return {
+			render: render
+		}
+	})();
+
+	return {
+		home : homeController.render,
+		products: productController.render,
+		categories: categoriesController.render,
+		search: searchController.render
+	}
+})();
+

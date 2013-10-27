@@ -1,0 +1,44 @@
+﻿test("Check if return real product",
+  function () {
+      var product = Object.create(Product);
+      product.init("Book", "Book 111", "$32", "color-bg.png", "2111", 2);
+      equal(product.productType, "Book", "Expected: " + product.productType);
+      equal(product.title, "Book 111", "Expected: " + product.title);
+      equal(product.price, "$32", "Expected: " + product.price);
+      equal(product.code, "2111", "Expected: " + product.code);
+      equal(product.imgSrc, "color-bg.png", "Expected: " + product.imgSrc);
+      equal(product.quantity, 2, "Expected: " + product.quantity);
+  });
+test("Check product introduce",
+  function () {
+      var product = Object.create(Product);
+      product.init("Book", "Book 111", "$32", "color-bg.png", "2111", 2);
+      equal(product.introduce(), "Type: " + product.productType +
+            ", Name: " + product.title + ", Price: " + product.price + ", ProductCode: " + product.code);
+  });
+test("Check add product and get product",
+  function () {
+      var product = Object.create(Product);
+      product.init("Book", "Book 111", "$32", "color-bg.png", "2111", 2);
+      equal(product.productType, "Book", "Expected: " + product.productType);
+      equal(product.title, "Book 111", "Expected: " + product.title);
+      equal(product.price, "$32", "Expected: " + product.price);
+      equal(product.code, "2111", "Expected: " + product.code);
+      equal(product.imgSrc, "color-bg.png", "Expected: " + product.imgSrc);
+      equal(product.quantity, 2, "Expected: " + product.quantity);
+      var repo = ProductRepository;
+      repo.AddProduct(product);
+      var actual = repo.GetProductsByCategory("Book");
+      equal(actual[actual.length-1], product);
+  });
+test("Check GetAll()",
+  function () {
+      var repo = ProductRepository;
+      var actual = repo.GetProductsByCategory("Movie");
+      equal(actual.length, 15);
+      var product = Object.create(Product);
+      product.init("Movie", "Book 111", "$32", "color-bg.png", "2111", 2);
+      repo.AddProduct(product);
+      actual = repo.GetProductsByCategory("Movie");
+      equal(actual.length, 16);
+  });

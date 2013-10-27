@@ -1,0 +1,524 @@
+﻿(function () {
+    if (!Storage.prototype.setObject) {
+        Storage.prototype.setObject = function setObject(key, obj) {
+            var jsonObj = JSON.stringify(obj);
+            this.setItem(key, jsonObj);
+        };
+    }
+    if (!Storage.prototype.getObject) {
+        Storage.prototype.getObject = function getObject(key) {
+            var jsonObj = this.getItem(key);
+            var obj = JSON.parse(jsonObj);
+            return obj;
+        };
+    }
+})();
+
+var Product = {
+    init: function (type, title, price, imgSrc, code, quantity) {
+        this.productType = type;
+        this.title = title;
+        this.price = price;
+        this.imgSrc = imgSrc;
+        this.code = code;
+        this.quantity = quantity;
+    },
+    introduce: function () {
+        return "Type: " + this.productType +
+            ", Name: " + this.title + ", Price: " + this.price + ", ProductCode: " + this.code;
+    }
+}
+
+var ProductRepository = (function () {
+    var allProductsByCategory = [];
+
+    var Category={
+        init: function ( categoryTitle ) {
+            this.name = categoryTitle;
+            this.productArray = [];
+        }
+    }
+    
+    this.AddNewCategory = function(categoryTitle) {
+        var isDuplicate = false;
+        for (var i = 0; i < allProductsByCategory.length; i++) {
+            if (allProductsByCategory[i].name === categoryTitle) {
+                isDuplicate = true;
+                break;
+            }
+        }
+        if (! isDuplicate) {
+            var newCategory = Object.create(Category);
+            newCategory.init(categoryTitle);
+            allProductsByCategory.push(newCategory);
+        }
+        else  {
+           throw "This category allready exists!"
+        }
+    }
+
+    this.AddProduct = function(product) {
+         var categoryIndex = -1;
+         for (var i = 0; i < allProductsByCategory.length; i++) {
+            if (allProductsByCategory[i].name === product.productType) {
+               categoryIndex = i;
+                break;
+            }
+        }
+        if (categoryIndex !== -1) {
+             allProductsByCategory[categoryIndex].productArray.push(product);
+         }
+         else{
+            this.AddNewCategory(product.productType);
+            allProductsByCategory[allProductsByCategory.length-1].productArray.push(product)
+         }
+    }
+    this.GetProductsByCategory = function (categoryTitle) {
+        var resultArray = [];
+        var categoryIndex = -1;
+        for (var i = 0; i < allProductsByCategory.length; i++) {
+            if (allProductsByCategory[i].name === categoryTitle) {
+               categoryIndex = i;
+                break;
+            }
+        }
+        if (categoryIndex !== -1) {
+            resultArray = allProductsByCategory[categoryIndex].productArray;
+        }
+        else{
+            throw "No such category!"
+        }
+
+        return resultArray;
+    }
+    
+    this.GetAll = function ()  {
+        var allProductsArray = [];
+        
+        for (var i = 0; i < allProductsByCategory.length; i++) {
+           var currentCategory = allProductsByCategory[i].productArray;
+        
+            for (var j = 0; j < currentCategory.length; j++) {
+                allProductsArray.push(currentCategory[j]);
+            }
+        }
+
+        return allProductsArray;
+    }
+
+    this.GetCategories = function () {
+        var allCategories = [];
+
+        for (var i = 0; i < allProductsByCategory.length; i++) {
+            allCategories.push(allProductsByCategory[i].name);
+        }
+
+        return allCategories;
+    }
+    
+    return {
+        AddNewCategory: AddNewCategory,
+        AddProduct: AddProduct,
+        GetProductsByCategory: GetProductsByCategory,
+        GetAll: GetAll,
+        GetCategories: GetCategories
+    }
+})();
+
+
+var CartRepository = (function () {
+    this.AddProduct = function(code) {
+        var cart = sessionStorage.getObject('cart') || [];
+        for (var i = 0, l = cart.length; i < l; i+=1) {
+        if (cart[i].code == code) {
+            cart[i].boughtQuantity++;
+            sessionStorage.setObject('cart', cart);
+            var totalCount = sessionStorage.getObject('itemsCount');
+            if (totalCount) {
+                sessionStorage.setObject('itemsCount', totalCount+1);
+            } else {
+                sessionStorage.setObject('itemsCount', 1);
+            }
+            return;
+        }
+    }
+
+    var allProducts = ProductRepository.GetAll();
+        for (var i = 0; i < allProducts.length; i++) {
+            if (code == allProducts[i].code) {
+                allProducts[i].boughtQuantity = 1;
+                cart.push(allProducts[i]);
+                sessionStorage.setObject('cart', cart);
+                totalCount = sessionStorage.getObject('itemsCount');
+                if (totalCount) {
+                    sessionStorage.setObject('itemsCount', totalCount+1);
+                } else {
+                    sessionStorage.setObject('itemsCount', 1);
+                }
+                break;
+            }
+        }
+    
+    }
+    
+    this.DeleteProduct = function (code) {
+        var cart = sessionStorage.getObject('cart') || [];
+        for (var i = 0; i < cart.length; i++) {
+            if (code == cart[i].code) {
+                cart[i] == cart[cart.length-1];
+                cart.pop();
+                break;
+            }
+        }
+        var totalCount = sessionStorage.getObject('itemsCount');
+        if (totalCount) {
+            sessionStorage.setObject('itemsCount', totalCount-1);
+        }
+    }
+
+    this.Empty = function () {
+        sessionStorage.setObject('cart', []);
+        var totalCount = sessionStorage.getObject('itemsCount');
+        if (totalCount) {
+            sessionStorage.setObject('itemsCount', 0);
+        }
+    }
+    
+    this.GetCart = function ()  {
+        return sessionStorage.getObject('cart') || [];
+    }
+
+    this.GetCount = function () {
+        return sessionStorage.getObject('itemsCount');
+    }
+
+    this.GetTotalAmount  = function ()  {
+        var cart = sessionStorage.getObject('cart') || [];
+        var sum = 0;
+        for (var i = 0; i < cart.length; i++) {
+           sum += cart[i].price * cart[i].boughtQuantity;
+        }
+        return sum;
+    }
+    
+    return {
+        AddProduct: AddProduct,
+        DeleteProduct: DeleteProduct,
+        Empty: Empty,
+        GetCart: GetCart,
+        GetCount : GetCount,
+        GetTotalAmount: GetTotalAmount
+    }
+})();
+
+var elementRenderer = (function ($) {
+    var div = $('#container');
+    var internalDiv = document.createElement("div");
+    var ul = document.createElement("ul");
+    var itemNode = document.createElement("li");
+    var p = document.createElement("p");
+    var img = document.createElement("img");
+    var btn = document.createElement("a");
+	var itemsCount = 0;
+	$(".front-div").hide();
+
+    $.fn.zoom = function (size) {
+        size = parseInt(size);
+        var elements = $(this.selector);
+        elements.on("mouseover", function () {
+            var oldWidth = parseInt($(this).css("width"));
+            var oldHeight = parseInt($(this).css("height"));
+            $(this).css("width", (oldWidth * size) + "px");
+            $(this).css("height", (oldHeight * size) + "px");
+        });
+
+        elements.on("mouseout", function () {
+            var oldWidth = parseInt($(this).css("width"));
+            var oldHeight = parseInt($(this).css("height"));
+            $(this).css("width", (oldWidth / size) + "px");
+            $(this).css("height", (oldHeight / size) + "px");
+        });
+        return this;
+    }
+
+    function clearDiv() {
+        // $("#container").empty();
+        var div1 = document.getElementById("container");
+        while (div1.firstChild) {
+            div1.removeChild(div1.firstChild);
+        }
+        return this;
+    }
+
+    function clearProdDiv() {
+        var div1 = document.getElementById("prodDiv");
+        if (div1 != null) {
+            while (div1.firstChild) {
+                div1.removeChild(div1.firstChild);
+            }
+        }
+        return this;
+    }
+
+    function Render(array, productsOnPage, startNumber) {
+        clearDiv();
+        var startNumber = startNumber || 0;
+        var productsOnPage = productsOnPage || 12;
+        var jUl = $(ul.cloneNode());
+
+        for (var i = startNumber, len = array.length; i < len && i < (startNumber + productsOnPage) ; i++) {
+            var currProd = array[i];
+
+            var currImg = $(img.cloneNode());
+            currImg.attr("src", currProd.imgSrc);
+            var currP = $(p.cloneNode());
+            currP.html('<strong>Price: ' + currProd.price + ' $ </strong><br>');
+
+            var jBtn = $(btn.cloneNode()).addClass("btn").addClass("add-to-cart-button");
+            jBtn.attr('id', currProd.code);
+            jBtn.html("Add to Card");
+
+            var jCurrLi = $(itemNode.cloneNode());
+            jCurrLi.addClass(currProd.productType);
+            
+            
+            var contentHolderDiv = $("<div></div>");
+            var pageAnchor = $("<a></a>");
+            pageAnchor.html(currProd.title);
+            pageAnchor.attr("href", "#/products/" + currProd.code);
+            pageAnchor.append(currImg);
+            contentHolderDiv.append(pageAnchor);
+
+            var quickViewButton = $("<div></div>");
+            quickViewButton.addClass("quick-view-button");
+
+            contentHolderDiv.append(quickViewButton);
+            contentHolderDiv.addClass("li-content-holder");
+            jCurrLi.append(contentHolderDiv);
+            jCurrLi.append(currP);
+            jCurrLi.append(jBtn);
+            jUl.append(jCurrLi);
+        }
+
+        div.append(jUl);
+
+        var rendedProducts = $('#container img')
+
+        //// add to cart:
+        $(".btn").click(
+            function () {
+                CartRepository.AddProduct(this['id']);
+				//get the name of the book
+				var item = $(this).parent().find(">:first-child").html();
+				//check the key of session storage if it's already used
+				$(".cart").html("Items: " + CartRepository.GetCount());			
+                return this;
+            });
+		function addToSessionStore(cart){
+			//var item = $(btn).parent().find(">:first-child").html();
+				for(var i = 0; i < cart.length; i++){
+					if((sessionStorage.getItem(cart[i].title)) && 
+						sessionStorage.getItem(cart[i].title) < 50){
+						
+						var value = sessionStorage.getItem(cart[i].title) | 0;
+						sessionStorage.setItem(cart[i].title, value + 1);
+					}
+					else{
+						sessionStorage.setItem(cart[i].title, 1);
+					}
+				}				
+		}
+		$(".cart").click(
+            function () {
+                $(".front-div").empty();
+                $(".front-div").show(1000);
+                $(".front-div").offset({ left: 865, top: 200 });
+                var cart = sessionStorage.getObject('cart') || [];
+				for (var i = 0; i < cart.length; i++){
+					var name = cart[i].title;
+					var value = cart[i].boughtQuantity;
+					$('.front-div').append(name + " Quantity: " + value + " Price: " +
+					cart[i].price + "$" + "</br>");
+				}
+				addTotalAmount();
+				renderCloseCart();
+				clearCartIfNeed();
+            });		
+        ////show div when click on item
+        $(".front-div").hide();
+        $(".quick-view-button").click(
+            function (e) {
+                var popUpDiv = $(".front-div").eq(0);
+                popUpDiv.empty();
+                popUpDiv.show(1000);
+                popUpDiv.offset({ left: e.pageX - 100, top: e.pageY - 100 });
+                var buttonId = $(this).parent().next().next().attr("id");
+                var allProducts = ProductRepository.GetAll();
+                var product;
+                for (var i = 0, l = allProducts.length; i < l; i+=1) {
+                    if (allProducts[i].code == buttonId) {
+                        product = allProducts[i];
+                    }
+                }
+                popUpDiv.append("<h2>" + product.title + "</h2>");
+                var img = $("<img>");
+                img.attr("src", product.imgSrc);
+                popUpDiv.append(img);
+                popUpDiv.append("<p>Quantity in stock: " + product.quantity + "</p>");
+                var btn = $("<a></a>");
+                btn.attr("id", product.code);
+                btn.text("Add to Cart");
+                btn.click(function() { 
+                    CartRepository.AddProduct(this['id']);
+                    //get the name of the book
+                    var item = $(this).parent().find(">:first-child").html();
+                    //check the key of session storage if it's already used
+                    $(".cart").html("Items: " + CartRepository.GetCount());         
+                    return this;
+                });
+                popUpDiv.append("<h4>Category: " + product.productType + "</h4>")
+                popUpDiv.append(btn);
+
+
+                //add close button
+                var a = document.createElement("a");
+                $(a).addClass("quick-view-close");
+                $(a).text("x Close");
+                $(a).click(
+					function (e) {
+					    $(popUpDiv).empty();
+					    $(popUpDiv).hide();
+					})
+                $(a).appendTo(popUpDiv);
+            });
+
+    }
+	//render Clear
+	function clearCartIfNeed() {
+		var a = document.createElement("a");
+		$(a).addClass("quick-view-close");
+		$(a).css('right', 180);
+		$(a).css('background-color', "#FFFFA0");			
+		$(a).css('border', "1px solid black");
+		$(a).css('border-radius', 10);
+		$(a).text("clear cart");
+		if(sessionStorage.length == 0){
+			$(a).appendTo(".front-div");
+			return;
+		}
+		$(a).click(
+			function (e) {
+				CartRepository.Empty();
+				sessionStorage.clear();
+				itemsCount = 0;
+				$('.front-div').empty();
+				renderCloseCart();
+				$(".cart").html("Items: " + itemsCount);
+				clearCartIfNeed();
+				addTotalAmount();				
+			})
+		$(a).appendTo(".front-div");
+	}
+	//Render Close
+	function renderCloseCart() {
+		var a = document.createElement("a");
+		$(a).addClass("quick-view-close");
+		$(a).text("x Close");
+		$(a).click(
+			function (e) {
+				$(".front-div").hide();
+			})
+		$(a).appendTo(".front-div");
+	}
+
+	//Render Total Amount
+	function addTotalAmount() {
+		var total = document.createElement("div");
+		$(total).addClass("total-amount");
+		var html = "Total Amount: ";
+		var cart = CartRepository.GetCart();
+		if(cart.length != 0){
+			html += CartRepository.GetTotalAmount() + "$";
+		}
+		else{
+			html += 0 + "$";
+		}
+		$(total).text(html);
+		$(total).appendTo(".front-div");
+	}
+            
+    function RenderCategories(array, productsOnPage, startNumber) {
+        clearDiv();
+        var catDiv = $(internalDiv.cloneNode());
+        var prodDiv = $(internalDiv.cloneNode());
+		
+        var startNumber = startNumber || 0;
+        var productsOnPage = productsOnPage || 12;
+		
+        prodDiv.attr('id', 'prodDiv');
+        var jUl = $(ul.cloneNode());
+
+        for (var i = startNumber, len = array.length; i < len && i < (startNumber + productsOnPage) ; i++) {
+            var currCat = array[i];
+            var categoryAnchor = $("<a></a>");
+            categoryAnchor.attr("href", "#/categories/" + currCat);
+            var currImg = $(img.cloneNode());
+            currImg.attr("src", 'images/' + currCat + '.jpg');
+            currImg.attr("id", currCat);
+            currImg.css({
+                'width': '120px',
+                'height': '140px',
+            });
+
+            var jCurrLi = $(itemNode.cloneNode());
+            categoryAnchor.html(currCat + "<br/>");
+            categoryAnchor.append(currImg);
+            jCurrLi.append(categoryAnchor);
+            jCurrLi.addClass("category");
+            jUl.append(jCurrLi);
+        }
+
+        catDiv.append(jUl);
+        div.append(catDiv);
+        div.append(prodDiv);        
+
+        var rendedProducts = $('#container img')
+    }
+    return {
+        Render: Render,
+        RenderCategories: RenderCategories
+    }
+}(jQuery));
+
+//// TEST
+//// Ceates array of products:
+function GenerateProducts(type) {
+    var prefixCode=0;
+    var categoryImageURL;
+    if (type == "Movie") {
+        prefixCode  = 30000;
+        categoryImageURL = "images/Movie.jpg";
+    }
+    else if (type == "Music") {
+        prefixCode  = 20000;
+        categoryImageURL = "images/Music.jpg";
+    }
+    else if (type == "Book") {
+        prefixCode  = 10000;
+        categoryImageURL = "images/Book.jpg";
+    }
+    else{
+        prefixCode  = 90000;
+        categoryImageURL = "images/LessonsCD.jpg";
+    };
+    for (var i = 0; i < 15; i++) {
+        var prod = Object.create(Product)
+        prod.init(type, type+" Title " + i, 32+i, categoryImageURL, (prefixCode + i * 5), 5);
+        ProductRepository.AddProduct(prod);
+    }
+}
+
+GenerateProducts("Book");
+GenerateProducts("Music");
+GenerateProducts("Movie");
+GenerateProducts("LessonsCD");
